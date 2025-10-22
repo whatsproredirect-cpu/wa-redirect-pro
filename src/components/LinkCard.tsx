@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Copy, Trash2, Users } from "lucide-react";
+import { ExternalLink, Copy, Trash2, Users, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import EditLinkDialog from "./EditLinkDialog";
 
 interface LinkCardProps {
   link: any;
@@ -13,6 +14,7 @@ interface LinkCardProps {
 
 const LinkCard = ({ link, onUpdate }: LinkCardProps) => {
   const [deleting, setDeleting] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const linkUrl = `${window.location.origin}/r/${link.slug}`;
 
   const copyLink = () => {
@@ -69,6 +71,15 @@ const LinkCard = ({ link, onUpdate }: LinkCardProps) => {
           <Button
             size="sm"
             variant="outline"
+            onClick={() => setEditDialogOpen(true)}
+            className="flex-1 hover:bg-muted transition-smooth"
+          >
+            <Edit className="w-4 h-4 mr-2" />
+            Editar
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => window.open(linkUrl, "_blank")}
             className="flex-1 hover:bg-muted transition-smooth"
           >
@@ -93,6 +104,13 @@ const LinkCard = ({ link, onUpdate }: LinkCardProps) => {
           </Button>
         </div>
       </div>
+
+      <EditLinkDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        link={link}
+        onSuccess={onUpdate}
+      />
     </Card>
   );
 };

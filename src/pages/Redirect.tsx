@@ -203,7 +203,19 @@ const Redirect = () => {
     );
   }
 
-  if (!link || link.mode === "direct") {
+  if (!link) {
+    return (
+      <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">Link não encontrado</h1>
+          <p className="text-muted-foreground mb-4">Verifique o endereço ou contate o administrador.</p>
+          <a href="/" className="text-primary hover:underline">Voltar</a>
+        </div>
+      </div>
+    );
+  }
+
+  if (link.mode === "direct") {
     return (
       <div className="min-h-screen bg-gradient-subtle flex items-center justify-center">
         <div className="text-center">
