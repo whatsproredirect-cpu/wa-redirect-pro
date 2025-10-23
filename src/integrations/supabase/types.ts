@@ -132,42 +132,57 @@ export type Database = {
       }
       redirect_links: {
         Row: {
+          campaign: string | null
           capture_name: boolean | null
           capture_phone: boolean | null
           created_at: string
           id: string
+          last_lead_at: string | null
           message_template: string | null
           mode: string
           name: string
           pixel_event: string | null
           pixel_id: string | null
           slug: string
+          status: string | null
+          total_clicks: number | null
+          total_leads: number | null
           workspace_id: string
         }
         Insert: {
+          campaign?: string | null
           capture_name?: boolean | null
           capture_phone?: boolean | null
           created_at?: string
           id?: string
+          last_lead_at?: string | null
           message_template?: string | null
           mode: string
           name: string
           pixel_event?: string | null
           pixel_id?: string | null
           slug: string
+          status?: string | null
+          total_clicks?: number | null
+          total_leads?: number | null
           workspace_id: string
         }
         Update: {
+          campaign?: string | null
           capture_name?: boolean | null
           capture_phone?: boolean | null
           created_at?: string
           id?: string
+          last_lead_at?: string | null
           message_template?: string | null
           mode?: string
           name?: string
           pixel_event?: string | null
           pixel_id?: string | null
           slug?: string
+          status?: string | null
+          total_clicks?: number | null
+          total_leads?: number | null
           workspace_id?: string
         }
         Relationships: [

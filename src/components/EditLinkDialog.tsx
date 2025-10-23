@@ -45,6 +45,7 @@ const EditLinkDialog = ({
     pixel_id: "",
     pixel_event: "Contact",
     message_template: "Olá! Gostaria de mais informações.",
+    campaign: "",
   });
   const [contacts, setContacts] = useState<string[]>([""]);
 
@@ -60,6 +61,7 @@ const EditLinkDialog = ({
         pixel_id: link.pixel_id || "",
         pixel_event: link.pixel_event || "Contact",
         message_template: link.message_template || "Olá! Gostaria de mais informações.",
+        campaign: link.campaign || "",
       });
       loadContacts();
     }
@@ -100,6 +102,7 @@ const EditLinkDialog = ({
           pixel_id: formData.pixel_id,
           pixel_event: formData.pixel_event,
           message_template: formData.message_template,
+          campaign: formData.campaign,
         })
         .eq("id", link.id);
 
@@ -177,21 +180,33 @@ const EditLinkDialog = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="slug">Slug (URL)</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">/r/</span>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="slug">Slug (URL)</Label>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">/r/</span>
+                <Input
+                  id="slug"
+                  placeholder="black-friday-2025"
+                  value={formData.slug}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+                    })
+                  }
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="campaign">Campanha (opcional)</Label>
               <Input
-                id="slug"
-                placeholder="black-friday-2025"
-                value={formData.slug}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-                  })
-                }
-                required
+                id="campaign"
+                placeholder="Ex: Black Friday 2025"
+                value={formData.campaign}
+                onChange={(e) => setFormData({ ...formData, campaign: e.target.value })}
               />
             </div>
           </div>

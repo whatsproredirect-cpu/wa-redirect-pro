@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Link2, Plus, LogOut, ExternalLink } from "lucide-react";
+import { Link2, Plus, LogOut } from "lucide-react";
 import CreateLinkDialog from "@/components/CreateLinkDialog";
 import LinkCard from "@/components/LinkCard";
+import LinkFilters from "@/components/LinkFilters";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -15,6 +16,32 @@ const Dashboard = () => {
   const [links, setLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterMode, setFilterMode] = useState("all");
+  const [filterCampaign, setFilterCampaign] = useState("all");
+  const [sortBy, setSortBy] = useState("recent");
+
+  // Load filter preferences from localStorage
+  useEffect(() => {
+    const savedFilters = localStorage.getItem("leadflow-filters");
+    if (savedFilters) {
+      const filters = JSON.parse(savedFilters);
+      setSearchTerm(filters.searchTerm || "");
+      setFilterMode(filters.filterMode || "all");
+      setFilterCampaign(filters.filterCampaign || "all");
+      setSortBy(filters.sortBy || "recent");
+    }
+  }, []);
+
+  // Save filter preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem(
+      "leadflow-filters",
+      JSON.stringify({ searchTerm, filterMode, filterCampaign, sortBy })
+    );
+  }, [searchTerm, filterMode, filterCampaign, sortBy]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -102,6 +129,64 @@ const Dashboard = () => {
     }
   };
 
+  // Get unique campaigns from links
+  const campaigns = useMemo(() => {
+    const uniqueCampaigns = new Set<string>();
+    links.forEach((link) => {
+      if (link.campaign) {
+        uniqueCampaigns.add(link.campaign);
+      }
+    });
+    return Array.from(uniqueCampaigns);
+  }, [links]);
+
+  // Filter and sort links
+  const filteredAndSortedLinks = useMemo(() => {
+    let filtered = [...links];
+
+    // Search filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (link) =>
+          link.name.toLowerCase().includes(term) ||
+          link.slug.toLowerCase().includes(term)
+      );
+    }
+
+    // Mode filter
+    if (filterMode !== "all") {
+      filtered = filtered.filter((link) => link.mode === filterMode);
+    }
+
+    // Campaign filter
+    if (filterCampaign !== "all") {
+      filtered = filtered.filter((link) => link.campaign === filterCampaign);
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "recent":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "oldest":
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case "name":
+          return a.name.localeCompare(b.name);
+        case "leads":
+          return (b.total_leads || 0) - (a.total_leads || 0);
+        case "conversion":
+          const aConv = a.total_clicks > 0 ? a.total_leads / a.total_clicks : 0;
+          const bConv = b.total_clicks > 0 ? b.total_leads / b.total_clicks : 0;
+          return bConv - aConv;
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [links, searchTerm, filterMode, filterCampaign, sortBy]);
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
@@ -128,7 +213,7 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
           <div>
             <h1 className="text-4xl font-bold mb-2">Seus Links</h1>
             <p className="text-muted-foreground">
@@ -137,7 +222,7 @@ const Dashboard = () => {
           </div>
           <Button
             onClick={() => setCreateDialogOpen(true)}
-            className="bg-gradient-primary hover:shadow-glow transition-smooth"
+            className="bg-gradient-primary hover:shadow-glow transition-smooth w-full md:w-auto"
             disabled={!workspace}
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -169,11 +254,33 @@ const Dashboard = () => {
             </div>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {links.map((link) => (
-              <LinkCard key={link.id} link={link} onUpdate={handleLinkCreated} />
-            ))}
-          </div>
+          <>
+            <LinkFilters
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              filterMode={filterMode}
+              onFilterModeChange={setFilterMode}
+              filterCampaign={filterCampaign}
+              onFilterCampaignChange={setFilterCampaign}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+              campaigns={campaigns}
+            />
+
+            {filteredAndSortedLinks.length === 0 ? (
+              <Card className="p-12 text-center">
+                <p className="text-muted-foreground">
+                  Nenhum link encontrado com os filtros aplicados
+                </p>
+              </Card>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredAndSortedLinks.map((link) => (
+                  <LinkCard key={link.id} link={link} onUpdate={handleLinkCreated} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
 

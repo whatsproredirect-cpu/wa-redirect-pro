@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Copy, Trash2, Users, Edit } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Users } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import EditLinkDialog from "./EditLinkDialog";
+import LinkCardMenu from "./LinkCardMenu";
+import LinkStats from "./LinkStats";
+import ContactsModal from "./ContactsModal";
+import LinkPreviewModal from "./LinkPreviewModal";
 
 interface LinkCardProps {
   link: any;
@@ -15,7 +19,19 @@ interface LinkCardProps {
 const LinkCard = ({ link, onUpdate }: LinkCardProps) => {
   const [deleting, setDeleting] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [contactsModalOpen, setContactsModalOpen] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const linkUrl = `${window.location.origin}/r/${link.slug}`;
+
+  const getStatusBadge = () => {
+    if (link.status === "inactive") {
+      return <Badge variant="outline" className="text-muted-foreground">Inativo</Badge>;
+    }
+    if (link.status === "no_contacts") {
+      return <Badge variant="outline" className="text-destructive">Sem Atendentes</Badge>;
+    }
+    return <Badge className="bg-secondary">Ativo</Badge>;
+  };
 
   const copyLink = () => {
     navigator.clipboard.writeText(linkUrl);
@@ -44,66 +60,56 @@ const LinkCard = ({ link, onUpdate }: LinkCardProps) => {
   };
 
   return (
-    <Card className="p-6 hover:shadow-elegant transition-smooth">
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h3 className="font-bold text-lg mb-1">{link.name}</h3>
-            <p className="text-sm text-muted-foreground font-mono bg-muted px-2 py-1 rounded">
-              /r/{link.slug}
-            </p>
+    <>
+      <Card className="p-5 hover:shadow-elegant transition-smooth">
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-bold text-lg truncate">{link.name}</h3>
+                {getStatusBadge()}
+              </div>
+              <p className="text-xs text-muted-foreground font-mono bg-muted px-2 py-1 rounded inline-block mb-2">
+                /r/{link.slug}
+              </p>
+              {link.campaign && (
+                <Badge variant="outline" className="text-xs mt-1">
+                  {link.campaign}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              <Badge variant={link.mode === "form" ? "default" : "secondary"} className="text-xs">
+                {link.mode === "form" ? "Formulário" : "Direto"}
+              </Badge>
+              <LinkCardMenu
+                linkUrl={linkUrl}
+                onCopy={copyLink}
+                onEdit={() => setEditDialogOpen(true)}
+                onOpen={() => setPreviewModalOpen(true)}
+                onDelete={handleDelete}
+                deleting={deleting}
+              />
+            </div>
           </div>
-          <Badge variant={link.mode === "form" ? "default" : "secondary"}>
-            {link.mode === "form" ? "Formulário" : "Direto"}
-          </Badge>
-        </div>
 
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={copyLink}
-            className="flex-1 hover:bg-muted transition-smooth"
-          >
-            <Copy className="w-4 h-4 mr-2" />
-            Copiar
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setEditDialogOpen(true)}
-            className="flex-1 hover:bg-muted transition-smooth"
-          >
-            <Edit className="w-4 h-4 mr-2" />
-            Editar
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => window.open(linkUrl, "_blank")}
-            className="flex-1 hover:bg-muted transition-smooth"
-          >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Abrir
-          </Button>
-        </div>
+          <LinkStats
+            totalClicks={link.total_clicks || 0}
+            totalLeads={link.total_leads || 0}
+            lastLeadAt={link.last_lead_at}
+          />
 
-        <div className="pt-4 border-t flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="w-4 h-4" />
-            <span>Atendentes configurados</span>
-          </div>
           <Button
             size="sm"
-            variant="ghost"
-            onClick={handleDelete}
-            disabled={deleting}
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            variant="outline"
+            onClick={() => setContactsModalOpen(true)}
+            className="w-full hover:bg-muted transition-smooth"
           >
-            <Trash2 className="w-4 h-4" />
+            <Users className="w-4 h-4 mr-2" />
+            Gerenciar Atendentes
           </Button>
         </div>
-      </div>
+      </Card>
 
       <EditLinkDialog
         open={editDialogOpen}
@@ -111,7 +117,22 @@ const LinkCard = ({ link, onUpdate }: LinkCardProps) => {
         link={link}
         onSuccess={onUpdate}
       />
-    </Card>
+
+      <ContactsModal
+        open={contactsModalOpen}
+        onOpenChange={setContactsModalOpen}
+        linkId={link.id}
+        linkName={link.name}
+        onUpdate={onUpdate}
+      />
+
+      <LinkPreviewModal
+        open={previewModalOpen}
+        onOpenChange={setPreviewModalOpen}
+        linkUrl={linkUrl}
+        linkName={link.name}
+      />
+    </>
   );
 };
 
